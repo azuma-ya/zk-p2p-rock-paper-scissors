@@ -15,7 +15,7 @@ export const HowToPlayPage = () => {
 						</h3>
 					</div>
 					<div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-200">
-						<p className="text-slate-600 leading-relaxed font-medium text-lg">
+						<p className="text-slate-600 leading-relaxed font-medium">
 							このアプリは、中央サーバーを一切介さず、ユーザー同士が直接つながって遊ぶ
 							<span className="text-slate-900 font-bold underline decoration-slate-200 underline-offset-4 mx-1">
 								完全P2P・サーバーレス
@@ -38,12 +38,8 @@ export const HowToPlayPage = () => {
 					</div>
 
 					<div className="space-y-4">
-						<div className="relative space-y-10">
-							{/* Vertical Line */}
-							<div className="absolute left-[7px] top-2 bottom-2 w-[2px] bg-slate-100"></div>
-
-							<div className="relative pl-10">
-								<div className="absolute left-0 top-1 w-4 h-4 bg-white border-2 border-slate-800 rounded-full z-10"></div>
+						<div className="space-y-8">
+							<div className="">
 								<div className="space-y-2">
 									<h4 className="font-black text-slate-800 uppercase tracking-widest text-xs">
 										1. Offer側の操作 (接続を開始する人)
@@ -55,8 +51,7 @@ export const HowToPlayPage = () => {
 								</div>
 							</div>
 
-							<div className="relative pl-10">
-								<div className="absolute left-0 top-1 w-4 h-4 bg-white border-2 border-slate-400 rounded-full z-10"></div>
+							<div className="">
 								<div className="space-y-2">
 									<h4 className="font-black text-slate-500 uppercase tracking-widest text-xs">
 										2. Answer側の操作 (受け取る人)
@@ -68,8 +63,7 @@ export const HowToPlayPage = () => {
 								</div>
 							</div>
 
-							<div className="relative pl-10">
-								<div className="absolute left-0 top-1 w-4 h-4 bg-white border-2 border-slate-900 rounded-full z-10"></div>
+							<div className="">
 								<div className="space-y-3 p-5 bg-slate-50 rounded-xl border border-slate-200">
 									<h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">
 										3. Offer側の最終操作 (完了)

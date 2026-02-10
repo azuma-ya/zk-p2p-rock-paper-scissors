@@ -1,68 +1,60 @@
 # ZK P2P Rock-Paper-Scissors
 
-A serverless, peer-to-peer Rock-Paper-Scissors game using Zero-Knowledge Proofs (Groth16) for move integrity.
+ゼロ知識証明（ZK）を活用し、中央サーバーを一切介さずにピアツーピア（P2P）で対戦する、究極にプライベートでセキュアなジャンケンゲームです。
 
-## Prerequisites
+## ただのジャンケンに、なぜこれほど高度な技術を？
 
-- `bun` (Runtime & Package Manager)
-- `circom` (for circuit compilation, script will attempt to download automatically if missing)
+そうだね。
 
-## Setup
+## 対戦のフェーズ
 
-1. Install dependencies:
+1. **P2P接続**:
+   WebRTCによる手動シグナリングを使用して、プレイヤー同士が直接つながります。サーバーを経由しないため、あなたの通信ログがどこかに残ることはありません。
+2. **コミット (Phase 1)**:
+   プレイヤーは自分の「手」（グー・チョキ・パー）を選択し、それを秘密の数値（Salt）と共にハッシュ化して送信します。この時、ZK証明によって「0, 1, 2のいずれかの正当な手を出していること」のみが相手に証明され、具体的な手は隠されたままです。
+3. **公開 (Phase 2)**:
+   両プレイヤーの手が出揃った後、自分の手を公開（Reveal）します。ZK証明により、「公開した手が、最初にコミットした手と同一であること」が数学的に保証されます。後出しや、コミットした後の変更は不可能です。
 
-   ```bash
-   bun install
-   ```
+## 必要条件
 
-2. Build Circuits (Compile .circom, generate Trusted Setup keys):
+- **Bun**: ランタイムおよびパッケージマネージャー
+- **Circom**: 回路のコンパイルに必要（インストールされていない場合はスクリプトが自動的に試行します）
 
-   ```bash
-   bun scripts/build_circuits.ts
-   ```
+## セットアップ
 
-   > **Note**: This generates a local trusted setup (Powers of Tau) for testing. Do not use for production.
+### 依存関係のインストール
 
-3. Run Development Server:
-   ```bash
-   bun dev
-   ```
+```bash
+bun install
+```
 
-## How to Play
+### 回路（Circuits）のビルド
 
-1. Open the app in two different browser windows/tabs (or devices on same network if configured).
-2. **Tab A**: Enter a Room ID (e.g. `room1`) and Join.
-3. **Tab B**: Enter the same Room ID and Join.
-   > Only specific Room ID logic is implemented for event tagging, but P2P connection needs manual signaling.
-4. **Signaling (Manual P2P Connection)**:
-   - **Tab A**: Click "Connect (Generate Offer)". A JSON blob will appear in "Signal Data". Copy it.
-   - **Tab B**: Paste the blob into "Signal Data" and click "Accept Signal". A new JSON blob (Answer) will be generated/logged.
-   - **Tab A**: (If implementation supports full copy-paste flow): Implementing full copy-paste flow for 2-way handshake manually is tedious.
+以下のコマンドを実行して、ZK回路のコンパイルとTrusted Setup（Groth16）の生成を行います。
 
-   **Simplified Flow (Implemented)**:
-   - **A**: Generates Offer. Copy JSON.
-   - **B**: Pastes Offer. Code detects it's an Offer. Generates Answer. **Copy Answer JSON**.
-   - **A**: Pastes Answer. Code detects Answer. Connection Established.
+```bash
+bun run generate
+```
 
-5. **Game Round**:
-   - Both players start in a "Global" state (Room ID helps isolate logs logically).
-   - Select a Hand (Rock/Paper/Scissors).
-   - Click "Commit Hand". This broadcasts a Hash + Signature.
-   - Once both committed (or whenever ready), click "Reveal & Prove".
-   - This generates a ZK Proof that "I know a hand that matches the hash I sent earlier".
-   - Peers verify the proof and show "Proof Verified".
+> **注意**: このコマンドは開発・テスト用のTrusted Setupを生成します。
 
-## Architecture
+### 開発サーバーの起動
+
+```bash
+bun dev
+```
+
+## 技術スタック
 
 - **Frontend**: React + Vite
-- **P2P**: WebRTC DataChannels (Mesh)
-- **ZKP**: SnarkJS + Circom (C++ / WASM)
-- **Crypto**: Ed25519 Signatures, Poseidon Hash
-- **Storage**: Zustand (In-memory) + (Optional Persistence)
+- **P2P Communication**: WebRTC DataChannels (Manual Signaling)
+- **Zero-Knowledge Proofs**: SnarkJS + Circom (Groth16)
+- **Hashing**: Poseidon Hash (ZK-friendly)
+- **State Management**: Zustand
 
-## Directory Structure
+## ディレクトリ構成
 
-- `circuits/`: ZK Circuits
-- `scripts/`: Build tools
-- `src/lib/`: Core logic (Crypto, P2P, ZK, Types)
-- `public/circuits/`: Generated WASM/Key files
+- `circuits/`: `.circom` 回路定義
+- `scripts/`: 回路ビルド用スクリプト
+- `src/lib/`: P2P、ZK、暗号化のコアロジック
+- `public/circuits/`: ビルド済みのWASM、zkeyファイルなど
