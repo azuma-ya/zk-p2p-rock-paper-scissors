@@ -1,75 +1,68 @@
-# React + TypeScript + Vite
+# ZK P2P Rock-Paper-Scissors
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A serverless, peer-to-peer Rock-Paper-Scissors game using Zero-Knowledge Proofs (Groth16) for move integrity.
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `bun` (Runtime & Package Manager)
+- `circom` (for circuit compilation, script will attempt to download automatically if missing)
 
-## React Compiler
+## Setup
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+1. Install dependencies:
 
-Note: This will impact Vite dev & build performances.
+   ```bash
+   bun install
+   ```
 
-## Expanding the ESLint configuration
+2. Build Circuits (Compile .circom, generate Trusted Setup keys):
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+   ```bash
+   bun scripts/build_circuits.ts
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+   > **Note**: This generates a local trusted setup (Powers of Tau) for testing. Do not use for production.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+3. Run Development Server:
+   ```bash
+   bun dev
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## How to Play
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1. Open the app in two different browser windows/tabs (or devices on same network if configured).
+2. **Tab A**: Enter a Room ID (e.g. `room1`) and Join.
+3. **Tab B**: Enter the same Room ID and Join.
+   > Only specific Room ID logic is implemented for event tagging, but P2P connection needs manual signaling.
+4. **Signaling (Manual P2P Connection)**:
+   - **Tab A**: Click "Connect (Generate Offer)". A JSON blob will appear in "Signal Data". Copy it.
+   - **Tab B**: Paste the blob into "Signal Data" and click "Accept Signal". A new JSON blob (Answer) will be generated/logged.
+   - **Tab A**: (If implementation supports full copy-paste flow): Implementing full copy-paste flow for 2-way handshake manually is tedious.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+   **Simplified Flow (Implemented)**:
+   - **A**: Generates Offer. Copy JSON.
+   - **B**: Pastes Offer. Code detects it's an Offer. Generates Answer. **Copy Answer JSON**.
+   - **A**: Pastes Answer. Code detects Answer. Connection Established.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+5. **Game Round**:
+   - Both players start in a "Global" state (Room ID helps isolate logs logically).
+   - Select a Hand (Rock/Paper/Scissors).
+   - Click "Commit Hand". This broadcasts a Hash + Signature.
+   - Once both committed (or whenever ready), click "Reveal & Prove".
+   - This generates a ZK Proof that "I know a hand that matches the hash I sent earlier".
+   - Peers verify the proof and show "Proof Verified".
+
+## Architecture
+
+- **Frontend**: React + Vite
+- **P2P**: WebRTC DataChannels (Mesh)
+- **ZKP**: SnarkJS + Circom (C++ / WASM)
+- **Crypto**: Ed25519 Signatures, Poseidon Hash
+- **Storage**: Zustand (In-memory) + (Optional Persistence)
+
+## Directory Structure
+
+- `circuits/`: ZK Circuits
+- `scripts/`: Build tools
+- `src/lib/`: Core logic (Crypto, P2P, ZK, Types)
+- `public/circuits/`: Generated WASM/Key files
