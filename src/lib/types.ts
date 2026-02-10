@@ -1,100 +1,91 @@
-import { z } from "zod";
-
 // --- Base Types ---
-export const PubKeySchema = z.string(); // Hex string
-export const SignatureSchema = z.string(); // Hex string
-export const HashSchema = z.string(); // BigInt string or Hex? internal circom uses string arithmetic usually, but we'll use string for transport.
+export type PubKey = string; // Hex string
+export type Signature = string; // Hex string
+export type Hash = string; // BigInt string or Hex? internal circom uses string arithmetic usually, but we'll use string for transport.
 
 // --- Message Envelopes ---
-export const MessageTypeSchema = z.enum([
-	"SIGNAL",
-	"ROUND_COMMIT",
-	"ROUND_REVEAL",
-	"HAND_COMMIT",
-	"HAND_PROOF",
-	"EVENT_GOSSIP",
-	"NEXT_ROUND",
-]);
+export type MessageType =
+	| "SIGNAL"
+	| "ROUND_COMMIT"
+	| "ROUND_REVEAL"
+	| "HAND_COMMIT"
+	| "HAND_PROOF"
+	| "EVENT_GOSSIP"
+	| "NEXT_ROUND";
 
-export const BaseMessageSchema = z.object({
-	round: z.number().int().nonnegative(),
-	timestamp: z.number(),
-	senderId: z.string(), // uuid
-	senderPubKey: PubKeySchema,
-	signature: SignatureSchema, // Signature of the payload (or whole message excluding signature)
-});
+export interface BaseMessage {
+	round: number;
+	timestamp: number;
+	senderId: string; // uuid
+	senderPubKey: PubKey;
+	signature: Signature; // Signature of the payload (or whole message excluding signature)
+	type: MessageType;
+}
 
 // --- Payloads ---
 
 // 2. SIGNAL (WebRTC)
-export const SignalPayloadSchema = z.object({
-	type: z.literal("SIGNAL"),
-	payload: z.object({
-		targetPeerId: z.string(),
-		signal: z.any(), // Offer/Answer/Candidate
-	}),
-});
+export interface SignalPayload extends BaseMessage {
+	type: "SIGNAL";
+	payload: {
+		targetPeerId: string;
+		signal: any; // Offer/Answer/Candidate
+	};
+}
 
 // 3. ROUND_COMMIT (Random seed generation step 1)
-export const RoundCommitPayloadSchema = z.object({
-	type: z.literal("ROUND_COMMIT"),
-	payload: z.object({
-		commitHash: HashSchema,
-	}),
-});
+export interface RoundCommitPayload extends BaseMessage {
+	type: "ROUND_COMMIT";
+	payload: {
+		commitHash: Hash;
+	};
+}
 
 // 4. ROUND_REVEAL (Random seed generation step 2)
-export const RoundRevealPayloadSchema = z.object({
-	type: z.literal("ROUND_REVEAL"),
-	payload: z.object({
-		randomValue: z.string(),
-	}),
-});
+export interface RoundRevealPayload extends BaseMessage {
+	type: "ROUND_REVEAL";
+	payload: {
+		randomValue: string;
+	};
+}
 
 // 5. HAND_COMMIT (Player moves)
-export const HandCommitPayloadSchema = z.object({
-	type: z.literal("HAND_COMMIT"),
-	payload: z.object({
-		handCommit: HashSchema,
-	}),
-});
+export interface HandCommitPayload extends BaseMessage {
+	type: "HAND_COMMIT";
+	payload: {
+		handCommit: Hash;
+	};
+}
 
 // 6. HAND_PROOF (Player proves move valid)
-export const HandProofPayloadSchema = z.object({
-	type: z.literal("HAND_PROOF"),
-	payload: z.object({
-		proof: z.any(), // Groth16 proof object
-		publicSignals: z.array(z.string()),
-		hand: z.number().optional(),
-	}),
-});
+export interface HandProofPayload extends BaseMessage {
+	type: "HAND_PROOF";
+	payload: {
+		proof: any; // Groth16 proof object
+		publicSignals: string[];
+		hand?: number;
+	};
+}
 
 // 7. EVENT_GOSSIP (Log sync)
-export const GossipPayloadSchema = z.object({
-	type: z.literal("EVENT_GOSSIP"),
-	payload: z.object({
-		events: z.array(z.any()), // Array of signed events
-	}),
-});
+export interface GossipPayload extends BaseMessage {
+	type: "EVENT_GOSSIP";
+	payload: {
+		events: any[]; // Array of signed events
+	};
+}
 
 // 8. NEXT_ROUND (Sync round transition)
-export const NextRoundPayloadSchema = z.object({
-	type: z.literal("NEXT_ROUND"),
-	payload: z.object({}),
-});
+export interface NextRoundPayload extends BaseMessage {
+	type: "NEXT_ROUND";
+	payload: Record<string, never>;
+}
 
-export const GameMessageSchema = z.intersection(
-	BaseMessageSchema,
-	z.discriminatedUnion("type", [
-		SignalPayloadSchema,
-		RoundCommitPayloadSchema,
-		RoundRevealPayloadSchema,
-		HandCommitPayloadSchema,
-		HandProofPayloadSchema,
-		GossipPayloadSchema,
-		NextRoundPayloadSchema,
-	]),
-);
-
-export type GameMessage = z.infer<typeof GameMessageSchema>;
-export type MessageType = z.infer<typeof MessageTypeSchema>;
+export type GameMessage =
+	| SignalPayload
+	| RoundCommitPayload
+	| RoundRevealPayload
+	| HandCommitPayload
+	| HandProofPayload
+	| GossipPayload
+	| NextRoundPayload;

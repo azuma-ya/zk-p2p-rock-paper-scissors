@@ -15,7 +15,7 @@ import {
 } from "../lib/crypto";
 import { P2PManager } from "../lib/p2p";
 import { useGameStore } from "../lib/store";
-import { GameMessageSchema } from "../lib/types";
+import type { GameMessage } from "../lib/types";
 import { generateHandProof, verifyHandProof } from "../lib/zk";
 
 let p2p: P2PManager | null = null;
@@ -127,7 +127,7 @@ export const GamePage = () => {
 					console.log("MSG from", from, data);
 
 					try {
-						const parsed = GameMessageSchema.parse(data);
+						const parsed = data as GameMessage;
 
 						// Verify Signature
 						const isValid = await verifySignature(
