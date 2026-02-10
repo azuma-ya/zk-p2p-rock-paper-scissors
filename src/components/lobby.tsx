@@ -1,4 +1,5 @@
 import type { PeerState } from "../lib/store";
+import { QRSignaling } from "./qr-signaling";
 
 interface LobbyProps {
 	targetPeerId: string;
@@ -99,6 +100,8 @@ export const Lobby = ({
 						</button>
 					</div>
 				</div>
+
+				<QRSignaling signalData={signalData} onScan={setSignalData} />
 			</div>
 
 			<div className="pt-4 border-t border-border">
