@@ -20,6 +20,77 @@ import { generateHandProof, verifyHandProof } from "../lib/zk";
 
 let p2p: P2PManager | null = null;
 
+interface SignalingPayload {
+	target: string;
+	senderId: string;
+	signal: any;
+}
+
+// Compression Utilities
+async function compressSignal(obj: unknown): Promise<string> {
+	const str = JSON.stringify(obj);
+	const bytes = new TextEncoder().encode(str);
+	const stream = new ReadableStream({
+		start(controller) {
+			controller.enqueue(bytes);
+			controller.close();
+		},
+	});
+	const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
+	const chunks = [];
+	const reader = compressedStream.getReader();
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		chunks.push(value);
+	}
+	const result = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0));
+	let offset = 0;
+	for (const chunk of chunks) {
+		result.set(chunk, offset);
+		offset += chunk.length;
+	}
+	// Convert to Base64 safely for binary data
+	return btoa(String.fromCharCode(...Array.from(result)));
+}
+
+async function decompressSignal(base64: string): Promise<unknown> {
+	try {
+		const binary = atob(base64);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		const stream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(bytes);
+				controller.close();
+			},
+		});
+		const decompressedStream = stream.pipeThrough(
+			new DecompressionStream("gzip"),
+		);
+		const reader = decompressedStream.getReader();
+		const chunks = [];
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			chunks.push(value);
+		}
+		const result = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0));
+		let offset = 0;
+		for (const chunk of chunks) {
+			result.set(chunk, offset);
+			offset += chunk.length;
+		}
+		return JSON.parse(new TextDecoder().decode(result));
+	} catch (_e) {
+		// Fallback for uncompressed data (legacy signals)
+		console.log("Decompression failed, trying as plain JSON...");
+		return JSON.parse(atob(base64));
+	}
+}
+
 export const GamePage = () => {
 	const {
 		myId,
@@ -119,9 +190,11 @@ export const GamePage = () => {
 						senderId: myId,
 						signal,
 					};
-					const encoded = btoa(JSON.stringify(payload));
-					setSignalData(encoded);
-					setSignalingStatus(`Signal Generated (${signal.type})`);
+					compressSignal(payload).then((encoded) => {
+						setSignalData(encoded);
+						setSignalingStatus(`Signal Generated (${signal.type})`);
+						console.log("Compressed Signal Size:", encoded.length);
+					});
 				},
 				async (from, data) => {
 					console.log("MSG from", from, data);
@@ -225,12 +298,12 @@ export const GamePage = () => {
 	const acceptSignal = async () => {
 		if (!p2p || !signalData) return;
 		try {
-			const decoded = JSON.parse(atob(signalData));
+			setSignalingStatus("Processing Signal...");
+			const decoded = (await decompressSignal(signalData)) as SignalingPayload;
 			if (decoded.senderId === myId) {
 				alert("You cannot accept your own signal.");
 				return;
 			}
-			setSignalingStatus("Processing Signal...");
 			const remotePeerId = decoded.senderId || targetPeerId;
 			if (!remotePeerId) throw new Error("Unknown Sender ID");
 

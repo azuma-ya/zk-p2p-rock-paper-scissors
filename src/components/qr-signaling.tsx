@@ -90,7 +90,7 @@ export const QRSignaling = ({ signalData, onScan }: QRSignalingProps) => {
 
 			{showQR && signalData && (
 				<div className="flex flex-col items-center p-4 bg-white border rounded-lg animate-in fade-in zoom-in duration-200">
-					<div className="p-2 bg-white rounded-lg shadow-sm border">
+					<div className="p-2 bg-white rounded-lg border">
 						<QRCodeSVG value={signalData} size={200} />
 					</div>
 					<span className="text-[10px] text-slate-500 mt-2 font-medium break-all max-w-full text-center">
