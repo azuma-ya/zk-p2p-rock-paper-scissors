@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 // Components
-import { EventLog } from "../components/EventLog";
-import { GameArea } from "../components/GameArea";
-import { IdentityCard } from "../components/IdentityCard";
-import { Lobby } from "../components/Lobby";
+import { EventLog } from "../components/event-log";
+import { GameArea } from "../components/game-area";
+import { IdentityCard } from "../components/identity-card";
+import { Lobby } from "../components/lobby";
 import {
 	generateKeyPair,
 	generateNonce,
