@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 // Components
 import { EventLog } from "../components/EventLog";
 import { GameArea } from "../components/GameArea";
@@ -33,6 +33,7 @@ export const GamePage = () => {
 		removePeer,
 		setPeerCommit,
 		setPeerReveal,
+		setPeerConnected,
 		resetRound,
 		round,
 	} = useGameStore();
@@ -63,11 +64,54 @@ export const GamePage = () => {
 		});
 	}, [myPrivKey, setIdentity]);
 
+	const nextRound = useCallback(
+		async (isRemote = false) => {
+			setHand(null);
+			setCommitted(false);
+			setRevealed(false);
+			setNonce("");
+			setProofStatus("");
+			setGameResult("");
+			resetRound();
+
+			console.log(
+				`[GAME] Transitioning to next round. isRemote=${isRemote === true}`,
+			);
+
+			if (isRemote !== true && p2p && myPubKey && myPrivKey) {
+				console.log("[GAME] Broadcasting NEXT_ROUND to opponent...");
+				const msg = {
+					round: round,
+					timestamp: Date.now(),
+					senderId: myId,
+					senderPubKey: myPubKey,
+					type: "NEXT_ROUND" as const,
+					payload: {},
+				};
+
+				const sig = await signMessage(msg, myPrivKey);
+				const signedMsg = { ...msg, signature: sig };
+				p2p.broadcast(signedMsg);
+			}
+		},
+		[myPubKey, myPrivKey, myId, round, resetRound],
+	);
+
 	useEffect(() => {
 		if (myId && !p2p) {
 			console.log("Initializing P2P Manager...");
 			p2p = new P2PManager(
 				myId,
+				() => {}, // Placeholder, will be set below
+				() => {}, // Placeholder
+				() => {}, // Placeholder
+			);
+		}
+	}, [myId]);
+
+	useEffect(() => {
+		if (p2p) {
+			p2p.setHandlers(
 				(target, signal) => {
 					console.log("SIGNAL Generated for", target, signal.type);
 					const payload = {
@@ -123,14 +167,24 @@ export const GamePage = () => {
 							} else {
 								alert(`Proof FAILED for ${parsed.senderId}!`);
 							}
+						} else if (parsed.type === "NEXT_ROUND") {
+							console.log(
+								`[GAME] Received NEXT_ROUND from ${parsed.senderId}`,
+								parsed,
+							);
+							nextRound(true);
 						}
 					} catch (e) {
-						console.error("Invalid Message", e);
+						console.error("[GAME] Failed to process message", e);
 					}
+				},
+				(peerId, connected) => {
+					console.log(`PEER CONNECTION: ${peerId} connected=${connected}`);
+					setPeerConnected(peerId, connected);
 				},
 			);
 		}
-	}, [myId, addLog, setPeerCommit, setPeerReveal]);
+	}, [myId, addLog, setPeerCommit, setPeerReveal, setPeerConnected, nextRound]);
 
 	// Check Win Condition
 	useEffect(() => {
@@ -185,11 +239,15 @@ export const GamePage = () => {
 			if (decoded.signal?.type === "offer") {
 				setTargetPeerId(remotePeerId);
 				await p2p.handleSignal(remotePeerId, decoded.signal);
-				setSignalingStatus("Offer Accepted. Copy the answer!");
+				setSignalingStatus(
+					`Offer from ${remotePeerId.slice(0, 8)} accepted. Copy the answer!`,
+				);
 				addPeer(remotePeerId, "Connected");
 			} else if (decoded.signal?.type === "answer") {
 				const tempId = targetPeerId;
-				if (tempId && tempId !== remotePeerId) {
+				// If we have a temporary ID and it's different from the remote ID, rename it.
+				if (tempId && tempId !== remotePeerId && !peers[remotePeerId]) {
+					console.log(`REPLACING ID: ${tempId} -> ${remotePeerId}`);
 					await p2p.handleSignal(tempId, decoded.signal);
 					p2p.renamePeer(tempId, remotePeerId);
 					removePeer(tempId);
@@ -199,7 +257,7 @@ export const GamePage = () => {
 					await p2p.handleSignal(remotePeerId, decoded.signal);
 					addPeer(remotePeerId, "Connected");
 				}
-				setSignalingStatus("Answer Accepted. Connected!");
+				setSignalingStatus("Connected!");
 				setSignalData("");
 			}
 		} catch (e) {
@@ -279,19 +337,13 @@ export const GamePage = () => {
 		}
 	};
 
-	const nextRound = () => {
-		setHand(null);
-		setCommitted(false);
-		setRevealed(false);
-		setNonce("");
-		setProofStatus("");
-		setGameResult("");
-		resetRound();
-	};
-
 	const allPeersCommitted =
 		Object.values(peers).length > 0 &&
 		Object.values(peers).every((p) => p.committed);
+
+	const isPeerConnected =
+		Object.values(peers).length > 0 &&
+		Object.values(peers).some((p) => p.isConnected);
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -323,6 +375,7 @@ export const GamePage = () => {
 						nextRound={nextRound}
 						proofStatus={proofStatus}
 						opponentReady={allPeersCommitted}
+						isConnected={isPeerConnected}
 					/>
 				) : (
 					<div className="p-12 border-2 border-dashed border-slate-200 rounded-lg bg-white flex flex-col items-center justify-center text-center space-y-6 h-full min-h-75">

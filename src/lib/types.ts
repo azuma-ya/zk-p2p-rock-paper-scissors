@@ -13,6 +13,7 @@ export const MessageTypeSchema = z.enum([
 	"HAND_COMMIT",
 	"HAND_PROOF",
 	"EVENT_GOSSIP",
+	"NEXT_ROUND",
 ]);
 
 export const BaseMessageSchema = z.object({
@@ -76,6 +77,12 @@ export const GossipPayloadSchema = z.object({
 	}),
 });
 
+// 8. NEXT_ROUND (Sync round transition)
+export const NextRoundPayloadSchema = z.object({
+	type: z.literal("NEXT_ROUND"),
+	payload: z.object({}),
+});
+
 export const GameMessageSchema = z.intersection(
 	BaseMessageSchema,
 	z.discriminatedUnion("type", [
@@ -85,6 +92,7 @@ export const GameMessageSchema = z.intersection(
 		HandCommitPayloadSchema,
 		HandProofPayloadSchema,
 		GossipPayloadSchema,
+		NextRoundPayloadSchema,
 	]),
 );
 

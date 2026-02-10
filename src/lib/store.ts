@@ -10,6 +10,7 @@ export interface PeerState {
 	committed: boolean;
 	revealedHand?: number; // 0,1,2
 	verified: boolean;
+	isConnected: boolean;
 }
 
 interface GameState {
@@ -30,6 +31,7 @@ interface GameState {
 	removePeer: (id: string) => void;
 	setPeerCommit: (id: string, val: boolean) => void;
 	setPeerReveal: (id: string, hand: number) => void;
+	setPeerConnected: (id: string, val: boolean) => void;
 	addLog: (msg: GameMessage) => void;
 	resetRound: () => void;
 
@@ -64,6 +66,7 @@ export const useGameStore = create<GameState>((set) => ({
 					description: desc,
 					committed: state.peers[id]?.committed || false,
 					verified: state.peers[id]?.verified || false,
+					isConnected: state.peers[id]?.isConnected || false,
 				},
 			},
 		})),
@@ -76,20 +79,37 @@ export const useGameStore = create<GameState>((set) => ({
 		}),
 
 	setPeerCommit: (id, val) =>
-		set((state) => ({
-			peers: {
-				...state.peers,
-				[id]: { ...state.peers[id], committed: val },
-			},
-		})),
+		set((state) => {
+			if (!state.peers[id]) return state;
+			return {
+				peers: {
+					...state.peers,
+					[id]: { ...state.peers[id], committed: val },
+				},
+			};
+		}),
 
 	setPeerReveal: (id, hand) =>
-		set((state) => ({
-			peers: {
-				...state.peers,
-				[id]: { ...state.peers[id], revealedHand: hand, verified: true },
-			},
-		})),
+		set((state) => {
+			if (!state.peers[id]) return state;
+			return {
+				peers: {
+					...state.peers,
+					[id]: { ...state.peers[id], revealedHand: hand, verified: true },
+				},
+			};
+		}),
+
+	setPeerConnected: (id, val) =>
+		set((state) => {
+			if (!state.peers[id]) return state;
+			return {
+				peers: {
+					...state.peers,
+					[id]: { ...state.peers[id], isConnected: val },
+				},
+			};
+		}),
 
 	addLog: (msg) => set((state) => ({ logs: [...state.logs, msg] })),
 

@@ -10,6 +10,7 @@ interface GameAreaProps {
 	nextRound: () => void;
 	proofStatus: string;
 	opponentReady: boolean;
+	isConnected: boolean;
 }
 
 export const GameArea = ({
@@ -24,6 +25,7 @@ export const GameArea = ({
 	nextRound,
 	proofStatus,
 	opponentReady,
+	isConnected,
 }: GameAreaProps) => {
 	const hands = [
 		{ id: 0, name: "Rock", icon: "✊" },
@@ -57,7 +59,7 @@ export const GameArea = ({
 					</div>
 					<button
 						className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring h-11 px-8 bg-slate-900 text-slate-50 hover:bg-slate-900/90 hover:-translate-y-0.5 active:translate-y-0"
-						onClick={nextRound}
+						onClick={() => nextRound()}
 					>
 						Play Next Round
 					</button>
@@ -89,12 +91,12 @@ export const GameArea = ({
 					<div className="grid grid-cols-2 gap-4">
 						<button
 							className={`h-12 rounded-md font-bold transition-all ${
-								committed || hand === null
+								committed || hand === null || !isConnected
 									? "bg-slate-50 text-slate-400 cursor-not-allowed border"
 									: "bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-50"
 							}`}
 							onClick={sendHandVal}
-							disabled={committed || hand === null}
+							disabled={committed || hand === null || !isConnected}
 						>
 							{committed ? "LOCKED IN" : "COMMIT MOVE"}
 						</button>
@@ -115,6 +117,11 @@ export const GameArea = ({
 						<div className="flex items-center justify-center gap-2 p-3 bg-slate-50 text-slate-500 font-bold rounded-md border border-dashed text-xs animate-pulse">
 							<span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
 							Waiting for opponent commitment...
+						</div>
+					)}
+					{!committed && hand !== null && !isConnected && (
+						<div className="flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-600 font-bold rounded-md border border-amber-200 border-dashed text-xs">
+							Waiting for P2P connection to be established...
 						</div>
 					)}
 				</div>

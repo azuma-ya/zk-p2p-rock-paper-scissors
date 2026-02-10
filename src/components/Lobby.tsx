@@ -79,6 +79,19 @@ export const Lobby = ({
 							Copy
 						</button>
 						<button
+							className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent h-9 px-3"
+							onClick={async () => {
+								try {
+									const text = await navigator.clipboard.readText();
+									setSignalData(text);
+								} catch (err) {
+									console.error("Failed to read clipboard:", err);
+								}
+							}}
+						>
+							Paste
+						</button>
+						<button
 							className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-3 text-red-500 hover:bg-red-50"
 							onClick={() => setSignalData("")}
 						>
