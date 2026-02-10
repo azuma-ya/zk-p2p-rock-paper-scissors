@@ -7,7 +7,6 @@ export const HashSchema = z.string(); // BigInt string or Hex? internal circom u
 
 // --- Message Envelopes ---
 export const MessageTypeSchema = z.enum([
-	"JOIN",
 	"SIGNAL",
 	"ROUND_COMMIT",
 	"ROUND_REVEAL",
@@ -17,7 +16,6 @@ export const MessageTypeSchema = z.enum([
 ]);
 
 export const BaseMessageSchema = z.object({
-	roomId: z.string(),
 	round: z.number().int().nonnegative(),
 	timestamp: z.number(),
 	senderId: z.string(), // uuid
@@ -26,14 +24,6 @@ export const BaseMessageSchema = z.object({
 });
 
 // --- Payloads ---
-
-// 1. JOIN
-export const JoinPayloadSchema = z.object({
-	type: z.literal("JOIN"),
-	payload: z.object({
-		// Additional join info if needed
-	}),
-});
 
 // 2. SIGNAL (WebRTC)
 export const SignalPayloadSchema = z.object({
@@ -89,7 +79,6 @@ export const GossipPayloadSchema = z.object({
 export const GameMessageSchema = z.intersection(
 	BaseMessageSchema,
 	z.discriminatedUnion("type", [
-		JoinPayloadSchema,
 		SignalPayloadSchema,
 		RoundCommitPayloadSchema,
 		RoundRevealPayloadSchema,

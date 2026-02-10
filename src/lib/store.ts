@@ -2,24 +2,22 @@ import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import type { GameMessage } from "./types";
 
+export interface PeerState {
+	id: string;
+	pubKey?: string;
+	description: string;
+	// Game State
+	committed: boolean;
+	revealedHand?: number; // 0,1,2
+	verified: boolean;
+}
+
 interface GameState {
-	roomId: string | null;
 	myId: string;
 	myPubKey: string | null;
 	myPrivKey: string | null;
 
-	peers: Record<
-		string,
-		{
-			id: string;
-			pubKey?: string;
-			description: string;
-			// Game State
-			committed: boolean;
-			revealedHand?: number; // 0,1,2
-			verified: boolean;
-		}
-	>;
+	peers: Record<string, PeerState>;
 
 	logs: GameMessage[];
 
@@ -28,7 +26,6 @@ interface GameState {
 
 	// Game Actions
 	setIdentity: (priv: string, pub: string) => void;
-	joinRoom: (roomId: string) => void;
 	addPeer: (id: string, desc: string) => void;
 	removePeer: (id: string) => void;
 	setPeerCommit: (id: string, val: boolean) => void;
@@ -42,7 +39,6 @@ interface GameState {
 }
 
 export const useGameStore = create<GameState>((set) => ({
-	roomId: null,
 	myId: uuidv4(),
 	myPubKey: null,
 	myPrivKey: null,
@@ -57,8 +53,6 @@ export const useGameStore = create<GameState>((set) => ({
 	gameStatus: "INIT",
 
 	setIdentity: (priv, pub) => set({ myPrivKey: priv, myPubKey: pub }),
-
-	joinRoom: (roomId) => set({ roomId }),
 
 	addPeer: (id, desc) =>
 		set((state) => ({

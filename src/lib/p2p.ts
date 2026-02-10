@@ -14,14 +14,11 @@ export class P2PManager {
 	private peers: Map<string, PeerConnection> = new Map();
 	private onSignal: SignalCallback;
 	private onMessage: MessageCallback;
-	private myId: string;
-
 	constructor(
-		myId: string,
+		_myId: string,
 		onSignal: SignalCallback,
 		onMessage: MessageCallback,
 	) {
-		this.myId = myId;
 		this.onSignal = onSignal;
 		this.onMessage = onMessage;
 	}
